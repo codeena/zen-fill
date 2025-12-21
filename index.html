@@ -19,8 +19,11 @@
         button { padding: 18px; font-size: 20px; background: #00ffff; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; width: 85%; transition: 0.3s; color: black; }
         button:hover { background: #fff; transform: scale(1.05); }
         #score-box { position: absolute; top: 20px; left: 20px; color: #00ffff; font-size: 24px; font-weight: bold; font-family: monospace; }
-        #ad-loading { display: none; position: absolute; z-index: 100; background: #000; width: 100%; height: 100%; align-items: center; justify-content: center; flex-direction: column; }
-        .loader { border: 5px solid #333; border-top: 5px solid #00ffff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        
+        /* Loading Screen Styles */
+        #ad-loading { display: none; position: absolute; z-index: 100; background: #000; width: 100%; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+        .loader { border: 5px solid #333; border-top: 5px solid #00ffff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        #timer-text { font-size: 14px; color: #777; margin-top: 10px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         canvas { display: block; max-width: 100vw; max-height: 100vh; }
     </style>
@@ -28,7 +31,12 @@
 <body>
 
     <div id="score-box">0</div>
-    <div id="ad-loading"><div class="loader"></div><p>LOADING INTERACTIVE AD...</p></div>
+    
+    <div id="ad-loading">
+        <div class="loader"></div>
+        <p id="loading-status">LOADING INTERACTIVE AD...</p>
+        <p id="timer-text">Game will start in 4s...</p>
+    </div>
 
     <div id="ui-overlay">
         <div id="entry-screen" class="ui-content">
@@ -49,7 +57,7 @@
     <canvas id="canvas"></canvas>
 
 <script>
-    // --- AUDIO ---
+    // --- AUDIO SYSTEM ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSfx(f, t='sine', d=0.05, s=false) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -62,18 +70,41 @@
         o.start(); o.stop(audioCtx.currentTime+d);
     }
 
-    // --- AD LOGIC ---
+    // --- UPGRADED AD LOGIC WITH 4s TIMEOUT ---
+    let gameStarted = false;
+
     function requestAd(type) {
-        document.getElementById('ad-loading').style.display = 'flex';
+        if (gameStarted) return;
+        
+        const loadingDiv = document.getElementById('ad-loading');
+        const timerText = document.getElementById('timer-text');
+        loadingDiv.style.display = 'flex';
+        
+        let timeLeft = 4;
+        
+        // The Countdown Timer
+        let countdown = setInterval(() => {
+            timeLeft--;
+            timerText.innerText = "Game will start in " + timeLeft + "s...";
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                if (!gameStarted) {
+                    console.log("Ad timeout: Starting game.");
+                    startGame();
+                }
+            }
+        }, 1000);
+
+        // Google Ad Call
         adBreak({
             type: type,
             name: type === 'reward' ? 'start_game' : 'next_level',
             beforeReward: (show) => { show(); },
-            adViewed: () => { startGame(); },
-            adDismissed: () => { startGame(); },
+            adViewed: () => { clearInterval(countdown); startGame(); },
+            adDismissed: () => { clearInterval(countdown); startGame(); },
             adBreakDone: (info) => { 
-                document.getElementById('ad-loading').style.display = 'none';
-                if (info.breakStatus === 'notReady') startGame(); 
+                clearInterval(countdown);
+                if (!gameStarted) startGame();
             }
         });
     }
@@ -87,29 +118,19 @@
     const speed = 5.75, ballRad = 6, ringRad = 280, target = 1250;
 
     function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        
         pName = document.getElementById('player-name').value || "GUEST";
+        document.getElementById('ad-loading').style.display = 'none';
         document.getElementById('ui-overlay').style.display = 'none';
+        
         if (balls.length === 0) {
             balls.push({x:300, y:250, vx:speed, vy:0, color:'#00ffff', inside:true});
         }
         isRunning = true;
-        try { navigator.wakeLock.request('screen'); } catch(e){}
         animate();
     }
-
-    function pauseGame() { 
-        isRunning = false; 
-        document.getElementById('ui-overlay').style.display = 'flex';
-        document.getElementById('pause-screen').style.display = 'block';
-    }
-
-    function resumeGame() {
-        document.getElementById('ui-overlay').style.display = 'none';
-        document.getElementById('pause-screen').style.display = 'none';
-        isRunning = true; animate();
-    }
-
-    document.addEventListener("visibilitychange", () => { if(document.hidden && isRunning) pauseGame(); });
 
     function animate() {
         if(!isRunning) return;
@@ -137,7 +158,6 @@
                     spawn();
                 }
             }
-            // Keep speed constant
             let s = Math.sqrt(b.vx**2 + b.vy**2);
             b.vx = (b.vx/s)*speed; b.vy = (b.vy/s)*speed;
 
@@ -156,7 +176,6 @@
     }
 
     function spawn() {
-        if(balls.length > 2500) return;
         const colors = ['#00ffff', '#ff00ff', '#00ffaa', '#ffff00', '#ffffff'];
         const c = colors[Math.floor(Math.random()*colors.length)];
         for(let i=0; i<2; i++) {
@@ -169,7 +188,6 @@
         document.getElementById('nice-msg').innerText = "NICE " + pName.toUpperCase();
         document.getElementById('ui-overlay').style.display = 'flex';
         document.getElementById('end-screen').style.display = 'block';
-        // Request Break Ad at the end
         adBreak({ type: 'next', name: 'restart' });
     }
 </script>
