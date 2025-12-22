@@ -19,17 +19,85 @@
         button { padding: 18px; font-size: 18px; background: #00ffff; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; width: 85%; transition: 0.3s; color: black; margin-bottom: 10px; }
         button:hover { background: #fff; transform: scale(1.05); }
         .secondary-btn { background: #333; color: white; border: 1px solid #00ffff; }
-        #score-box { position: absolute; top: 20px; left: 20px; color: #00ffff; font-size: 24px; font-weight: bold; font-family: monospace; z-index: 10; }
         #ad-loading { display: none; position: absolute; z-index: 100; background: #000; width: 100%; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
         .loader { border: 5px solid #333; border-top: 5px solid #00ffff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         #timer-text { font-size: 14px; color: #777; margin-top: 10px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         canvas { display: block; width: 100vmin; height: 100vmin; border: 1px solid #222; }
+        #score-box { 
+    position: absolute; 
+    top: 20px; 
+    left: 20px; 
+    color: #00ffff; 
+    font-size: clamp(18px, 4vw, 24px); 
+    font-weight: bold; 
+    font-family: monospace; 
+    z-index: 10; 
+    text-shadow: 0 0 10px #00ffff;
+}
+
+#controls { 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    display: none; /* Hidden by default */
+    gap: 8px; 
+    z-index: 100; 
+}
+
+#controls button, #controls select {
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #00ffff;
+    color: #00ffff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: bold;
+    transition: 0.2s;
+    backdrop-filter: blur(5px);
+}
+
+#controls button:hover { background: #00ffff; color: black; }
+
+/* Responsive adjustments for small screens */
+@media (max-width: 600px) {
+    #controls { 
+        top: auto;
+        bottom: 30px; 
+        right: 50%;
+        transform: translateX(50%); /* Centers buttons at the bottom for easy thumb reach */
+        width: 90%;
+        justify-content: center;
+    }
+    #score-box { top: 10px; left: 10px; }
+}
+#controls button:active {
+    transform: scale(0.95);
+    background: #00ffff;
+    color: black;
+}
+
+/* Add a subtle pulse to the "Normal" speed option */
+#speed-stepper option {
+    background: #111;
+    color: #00ffff;
+}
     </style>
 </head>
 <body>
 
     <div id="score-box">0 / Loading...</div>
+    <div id="controls">
+        <select id="speed-stepper" onchange="updateSpeed(this.value)">
+            <option value="3">Speed: Slow</option>
+            <option value="4.5" selected>Speed: Normal</option>
+            <option value="7">Speed: Fast</option>
+            <option value="12">Speed: Turbo</option>
+        </select>
+        <button onclick="toggleGame()" id="pause-btn">STOP</button>
+        <button onclick="confirmRestart()">RESTART</button>
+    </div>
     
     <div id="ad-loading">
         <div class="loader"></div>
@@ -60,7 +128,7 @@
 <script>
     // 1. ADAPTIVE CONFIGURATION (SET ONLY ONCE)
     const isMobile = window.innerWidth < 768;
-    const speed = 4.5;
+    let speed = 4.5;
     const ballRad = isMobile ? 12 : 6; 
     const target = isMobile ? 750 : 1500; 
     const ringRad = 350;
@@ -168,16 +236,24 @@
     }
 }
 
-    function startGame() {
-        if (gameStarted) return;
-        gameStarted = true;
-        requestWakeLock();
-        document.getElementById('ad-loading').style.display = 'none';
-        document.getElementById('ui-overlay').style.display = 'none';
-        if (balls.length === 0) balls.push({x:400, y:300, vx:speed, vy:speed, color:'#00ffff', inside:true});
-        isRunning = true;
-        requestAnimationFrame(animate);
+function startGame() {
+    if (gameStarted) return;
+    gameStarted = true;
+    requestWakeLock();
+    
+    // Hide the ad/entry screens
+    document.getElementById('ad-loading').style.display = 'none';
+    document.getElementById('ui-overlay').style.display = 'none';
+    
+    // SHOW THE CONTROLS
+    document.getElementById('controls').style.display = 'flex';
+    
+    if (balls.length === 0) {
+        balls.push({x:400, y:300, vx:speed, vy:speed, color:'#00ffff', inside:true});
     }
+    isRunning = true;
+    requestAnimationFrame(animate);
+}
 
     function pauseGame() {
         isRunning = false;
@@ -294,19 +370,64 @@
     }
 
     function triggerBlast() {
-        isBlasted = true;
-        playSfx(50, 'sawtooth', 0.8, true);
-        balls.forEach(b => {
-            let ang = Math.atan2(b.y-400, b.x-400);
-            let force = 5 + Math.random() * 10;
-            b.vx = Math.cos(ang) * force; b.vy = Math.sin(ang) * force;
-        });
-        setTimeout(() => {
-            document.getElementById('ui-overlay').style.display = 'flex';
-            document.getElementById('end-screen').style.display = 'block';
-            document.getElementById('pause-screen').style.display = 'none';
-        }, 2000);
+    isBlasted = true;
+    // Hide controls during the finale
+    document.getElementById('controls').style.display = 'none'; 
+    
+    playSfx(50, 'sawtooth', 0.8, true);
+    balls.forEach(b => {
+        let ang = Math.atan2(b.y-400, b.x-400);
+        let force = 5 + Math.random() * 10;
+        b.vx = Math.cos(ang) * force; b.vy = Math.sin(ang) * force;
+    });
+    
+    setTimeout(() => {
+        document.getElementById('ui-overlay').style.display = 'flex';
+        document.getElementById('end-screen').style.display = 'block';
+        document.getElementById('pause-screen').style.display = 'none';
+    }, 2000);
+}
+    // Change 'const speed' to 'let speed' at the top of your script!
+
+
+function updateSpeed(newSpeed) {
+    speed = parseFloat(newSpeed);
+}
+
+function toggleGame() {
+    const btn = document.getElementById('pause-btn');
+    if (isRunning) {
+        isRunning = false;
+        btn.innerText = "RESUME";
+        btn.style.borderColor = "#ffff00"; // Yellow border for pause
+        btn.style.color = "#ffff00";
+    } else {
+        isRunning = true;
+        btn.innerText = "STOP";
+        btn.style.borderColor = "#00ffff";
+        btn.style.color = "#00ffff";
+        requestAnimationFrame(animate);
     }
+}
+function confirmRestart() {
+    // 1. Optional: Pause the game while the popup is open
+    const wasRunning = isRunning;
+    isRunning = false;
+
+    // 2. Ask the user
+    const choice = confirm("Are you sure? This will reset your current score!");
+
+    if (choice) {
+        // User clicked OK
+        location.reload();
+    } else {
+        // User clicked Cancel - Resume only if it was running before
+        if (wasRunning) {
+            isRunning = true;
+            requestAnimationFrame(animate);
+        }
+    }
+}
 </script>
 </body>
 </html>
