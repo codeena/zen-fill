@@ -1,177 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zen Fill Pro - Physics Edition</title>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
-    <script>
-      window.adsbygoogle = window.adsbygoogle || [];
-      var adBreak = adConfig = function(o) { adsbygoogle.push(o); }
-      adConfig({ preloadAdBreaks: 'on' });
-    </script>
-<style>
-    body { margin: 0; background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
-    
-    /* THE FIX: Simplified Controls */
-    #controls { 
-        position: fixed !important; 
-        top: 20px !important; 
-        right: 20px !important; 
-        display: none; /* Controlled by JS */
-        flex-direction: column; 
-        align-items: flex-end; 
-        z-index: 10000 !important; 
-    }
-
-    #menu-toggle { 
-        width: 50px; 
-        height: 50px; 
-        background: rgba(0, 0, 0, 0.8); 
-        border: 2px solid #00ffff; 
-        color: #00ffff; 
-        font-size: 28px; 
-        border-radius: 10px; 
-        cursor: pointer; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        backdrop-filter: blur(5px);
-    }
-
-    #menu-content { 
-        display: none; 
-        flex-direction: column; 
-        gap: 10px; 
-        background: rgba(0, 0, 0, 0.9); 
-        padding: 15px; 
-        border-radius: 12px; 
-        border: 1px solid #00ffff; 
-        margin-top: 10px; 
-        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-    }
-
-    #menu-content button, #menu-content select { 
-        width: 130px; 
-        padding: 12px; 
-        background: transparent; 
-        border: 1px solid #00ffff; 
-        color: #00ffff; 
-        border-radius: 8px; 
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    /* Score Box Fix */
-    #score-box { 
-        position: absolute; 
-        top: 20px; 
-        left: 20px; 
-        color: #00ffff; 
-        font-size: clamp(16px, 4vw, 24px); 
-        font-weight: bold; 
-        font-family: monospace; 
-        z-index: 10; 
-        text-shadow: 0 0 10px #00ffff;
-    }
-
-    /* UI Screens */
-    #ui-overlay { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); width: 100%; height: 100%; z-index: 50; }
-    .ui-content { text-align: center; width: 90%; max-width: 400px; }
-    h1 { font-size: 50px; color: #00ffff; text-shadow: 0 0 20px #00ffff; margin-bottom: 20px; }
-    input { padding: 15px; font-size: 18px; border-radius: 5px; border: 2px solid #00ffff; background: #111; color: white; text-align: center; margin-bottom: 20px; width: 80%; }
-    
-    /* Main Buttons (Start/Play Again) */
-    .ui-content button { padding: 18px; font-size: 18px; background: #00ffff; border: none; cursor: pointer; border-radius: 50px; font-weight: bold; width: 85%; transition: 0.3s; color: black; margin-bottom: 10px; }
-
-    #ad-loading { display: none; position: absolute; z-index: 100; background: #000; width: 100%; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
-    .loader { border: 5px solid #333; border-top: 5px solid #00ffff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    
-    canvas { display: block; width: 100vmin; height: 100vmin; border: 1px solid #222; z-index: 1; }
-    #skip-ad-btn {
-    display: none; 
-    width: auto !important;
-    padding: 12px 25px !important;
-    background: #00ffff !important;
-    color: #000 !important;
-    border-radius: 50px !important;
-    font-size: 16px !important;
-    font-weight: bold !important;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-    border: none;
-    margin-top: 20px;
-    animation: pulse 1.5s infinite; /* Makes it grab attention */
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(0, 255, 255, 0.8); }
-    100% { transform: scale(1); }
-}
-#ad-loading p {
-    color: #777;
-    font-family: monospace;
-    letter-spacing: 1px;
-    margin: 5px 0;
-}
-
-#loading-status {
-    color: #00ffff !important;
-    font-weight: bold;
-    font-size: 18px;
-}
-</style>
-</head>
-<body>
-    <div id="controls">
-        <button id="menu-toggle" onclick="toggleMenu()">☰</button>
-        <div id="menu-content" style="display: none;">
-            <select id="speed-stepper" onchange="updateSpeed(this.value)">
-                <option value="3">Slow</option>
-                <option value="4.5" selected>Normal</option>
-                <option value="7">Fast</option>
-                <option value="12">Turbo</option>
-            </select>
-            <button onclick="toggleGame()" id="pause-btn">STOP</button>
-            <button onclick="confirmRestart()">RESTART</button>
-        </div>
-    </div>
-
-    <div id="score-box">0 / Loading...</div>
-    
-    <div id="ad-loading">
-        <div class="loader"></div>
-        <p id="loading-status">INITIALIZING SYSTEMS...</p>
-        <p id="timer-text">Connecting to Ad Server (6s)...</p>
-        <button id="skip-ad-btn" style="display:none; width: auto;" onclick="startGame()">PLAY FOR FREE</button>
-    </div>
-
-    <div id="ui-overlay">
-        <div id="entry-screen" class="ui-content">
-            <h1>ZEN FILL</h1>
-            <input type="text" id="player-name" placeholder="ENTER NAME">
-            <button onclick="requestAd('reward')">WATCH AD TO PLAY</button>
-        </div>
-        <div id="end-screen" class="ui-content" style="display:none;">
-            <h1 id="nice-msg">BLAST!</h1>
-            <button onclick="location.reload()">PLAY AGAIN</button>
-        </div>
-        <div id="pause-screen" class="ui-content" style="display:none;">
-            <h1>PAUSED</h1>
-            <button onclick="resumeGame()">CONTINUE</button>
-            <button class="secondary-btn" onclick="location.reload()">RESTART</button>
-        </div>
-    </div>
-
-    <canvas id="canvas"></canvas>
-
-
-    <script>
+<script>
         const isMobile = window.innerWidth < 768;
-        let speed = 4.5;
-        const ballRad = isMobile ? 12 : 6; 
+        let speed = isMobile ? 8.5 : 6.0; 
+        const ballRad = isMobile ? 10 : 6; 
         const target = isMobile ? 750 : 1500; 
         const ringRad = 350;
     
@@ -184,57 +14,68 @@
         let isRunning = false;
         let isBlasted = false;
         let gameStarted = false;
+        let lastBallSound = 0;
         let wakeLock = null;
-        let lastBallSound = 0; // Throttle for ball-to-ball sounds
-    
+
         document.getElementById('score-box').innerText = "0 / " + target;
     
-        // --- CLASSIC SOUND SYSTEM ---
+        // --- AUDIO ENGINE ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+        masterGain.gain.value = 0.6;
     
         function playSfx(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.connect(gain);
+            gain.connect(masterGain);
             const now = audioCtx.currentTime;
     
             if (type === 'wall') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, now);
-                gain.gain.setValueAtTime(0.05, now);
+                osc.frequency.setValueAtTime(220, now);
+                gain.gain.setValueAtTime(0.15, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
                 osc.start(now); osc.stop(now + 0.1);
-            } 
-            else if (type === 'ball') {
-                // Only play if 15ms has passed since last ball sound to prevent noise lag
-                if (Date.now() - lastBallSound < 15) return;
+            } else if (type === 'ball') {
+                if (Date.now() - lastBallSound < 35) return;
                 lastBallSound = Date.now();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600, now);
-                gain.gain.setValueAtTime(0.02, now);
+                osc.frequency.setValueAtTime(700, now);
+                gain.gain.setValueAtTime(0.08, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.start(now); osc.stop(now + 0.05);
-            } 
-            else if (type === 'exit') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, now);
-                gain.gain.setValueAtTime(0.1, now);
+            } else if (type === 'exit') {
+                osc.frequency.setValueAtTime(950, now);
+                gain.gain.setValueAtTime(0.25, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
             }
         }
     
+        // --- TAB VISIBILITY LOGIC ---
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && isRunning && gameStarted && !isBlasted) {
+                pauseGame();
+            }
+        });
+
+        // --- WAKE LOCK (KEEP SCREEN ON) ---
         async function requestWakeLock() {
-            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { console.log("WakeLock error"); }
         }
-    
-        document.addEventListener("visibilitychange", () => { if (document.hidden && isRunning) pauseGame(); });
-    
+
+        // --- AD & START LOGIC ---
         function requestAd(type) {
             const loadingDiv = document.getElementById('ad-loading');
             const timerText = document.getElementById('timer-text');
             const skipBtn = document.getElementById('skip-ad-btn');
+            
             loadingDiv.style.display = 'flex';
             skipBtn.style.display = 'none';
             
@@ -260,16 +101,29 @@
             });
         }
     
-        // --- UPDATED COLLISION (WITH SOUND) ---
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+            requestWakeLock();
+            document.getElementById('ad-loading').style.display = 'none';
+            document.getElementById('ui-overlay').style.display = 'none';
+            document.getElementById('controls').style.display = "flex"; 
+            if (balls.length === 0) balls.push({x:400, y:300, vx:speed, vy:speed, color:'#00ffff', inside:true});
+            isRunning = true;
+            requestAnimationFrame(animate);
+        }
+    
+        // --- PHYSICS & RENDERING ---
         function resolveCollision(b1, b2) {
             const dx = b2.x - b1.x;
             const dy = b2.y - b1.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance < ballRad * 2 && distance > 0) {
-                playSfx('ball'); // BALL HITTING BALL
-                const overlap = (ballRad * 2 - distance) / 2;
-                const nx = dx / distance;
-                const ny = dy / distance;
+            const distanceSq = dx * dx + dy * dy;
+            const minDistance = ballRad * 2;
+            if (distanceSq < minDistance * minDistance && distanceSq > 0) {
+                playSfx('ball');
+                const distance = Math.sqrt(distanceSq);
+                const overlap = (minDistance - distance) / 2;
+                const nx = dx / distance; const ny = dy / distance;
                 b1.x -= nx * overlap; b1.y -= ny * overlap;
                 b2.x += nx * overlap; b2.y += ny * overlap;
                 const v1n = b1.vx * nx + b1.vy * ny;
@@ -282,36 +136,6 @@
             }
         }
     
-        function startGame() {
-            if (gameStarted) return;
-            gameStarted = true;
-            document.getElementById('ad-loading').style.display = 'none';
-            document.getElementById('ui-overlay').style.display = 'none';
-            document.getElementById('controls').style.display = "flex"; 
-            if (balls.length === 0) balls.push({x:400, y:300, vx:speed, vy:speed, color:'#00ffff', inside:true});
-            isRunning = true;
-            requestAnimationFrame(animate);
-        }
-    
-        function toggleMenu() {
-            const content = document.getElementById('menu-content');
-            content.style.display = (content.style.display === 'flex') ? 'none' : 'flex';
-        }
-    
-        function pauseGame() {
-            isRunning = false;
-            document.getElementById('ui-overlay').style.display = 'flex';
-            document.getElementById('pause-screen').style.display = 'block';
-            document.getElementById('entry-screen').style.display = 'none';
-        }
-    
-        function resumeGame() {
-            document.getElementById('ui-overlay').style.display = 'none';
-            document.getElementById('pause-screen').style.display = 'none';
-            isRunning = true;
-            requestAnimationFrame(animate);
-        }
-    
         function animate() {
             if(!isRunning && !isBlasted) return;
             ctx.fillStyle = 'black'; 
@@ -319,8 +143,9 @@
             if(!isBlasted) rotation += 0.015;
             let activeCount = 0;
     
+            const checkStep = isMobile ? 2 : 1; 
             for (let i = 0; i < balls.length; i++) {
-                for (let j = i + 1; j < balls.length; j++) {
+                for (let j = i + 1; j < balls.length; j += checkStep) {
                     if (balls[i].inside && balls[j].inside) resolveCollision(balls[i], balls[j]);
                 }
             }
@@ -340,7 +165,7 @@
                     let rel = (ang - rotation) % (Math.PI * 2);
                     if(rel < 0) rel += Math.PI * 2;
                     if(rel > 0.25) {
-                        playSfx('wall'); // BALL HITTING RING
+                        playSfx('wall');
                         let nx = (b.x - 400) / d, ny = (b.y - 400) / d;
                         let dot = b.vx * nx + b.vy * ny;
                         b.vx -= 2 * dot * nx; b.vy -= 2 * dot * ny;
@@ -348,33 +173,27 @@
                         b.y = 400 + ny * (ringRad - ballRad);
                     } else {
                         b.inside = false;
-                        playSfx('exit'); // BALL GOING OUT
+                        playSfx('exit');
                         spawn();
                     }
                 }
-    
                 if(b.inside) activeCount++;
                 ctx.fillStyle = b.inside ? b.color : 'rgba(255,255,255,0.1)';
-                ctx.beginPath(); 
-                ctx.arc(b.x, b.y, ballRad, 0, Math.PI * 2); 
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(b.x, b.y, ballRad, 0, Math.PI * 2); ctx.fill();
                 if (b.y > 1200 || b.y < -400 || b.x > 1200 || b.x < -400) balls.splice(i, 1);
             }
     
-            // NEON DISCO RING
             if (!isBlasted) {
                 const hue = (Date.now() / 40) % 360; 
                 const neonColor = `hsl(${hue}, 100%, 65%)`;
-                const pulse = 12 + Math.sin(Date.now() / 1000) * 8;
                 ctx.save(); 
-                ctx.shadowBlur = pulse;
-                ctx.shadowColor = neonColor;
-                ctx.strokeStyle = neonColor; 
-                ctx.lineWidth = 7; 
                 ctx.lineCap = "round"; 
-                ctx.beginPath(); 
-                ctx.arc(400, 400, ringRad, rotation + 0.25, rotation + Math.PI * 2);
-                ctx.stroke();
+                ctx.strokeStyle = `hsla(${hue}, 100%, 65%, 0.3)`;
+                ctx.lineWidth = 16;
+                ctx.beginPath(); ctx.arc(400, 400, ringRad, rotation + 0.25, rotation + Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = neonColor;
+                ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.arc(400, 400, ringRad, rotation + 0.25, rotation + Math.PI * 2); ctx.stroke();
                 ctx.restore(); 
             }
     
@@ -386,33 +205,26 @@
         function spawn() {
             const colors = ['#00ffff', '#ff00ff', '#00ffaa', '#ffff00', '#ffffff'];
             const c = colors[Math.floor(Math.random()*colors.length)];
-            const ballCount = Math.random() > 0.8 ? 3 : 2; 
-            for(let i=0; i < ballCount; i++) {
+            for(let i=0; i < (Math.random() > 0.8 ? 3 : 2); i++) {
                 let a = Math.random() * Math.PI * 2;
-                balls.push({
-                    x: 400 + (Math.random()-0.5)*10, y: 400 + (Math.random()-0.5)*10, 
-                    vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, 
-                    color: c, inside: true
-                });
+                balls.push({x: 400, y: 400, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, color: c, inside: true});
             }
         }
     
         function triggerBlast() {
             isBlasted = true;
             document.getElementById('controls').style.display = 'none'; 
-            // Play special blast sound (low freq sawtooth)
             const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(50, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+            const g = audioCtx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+            osc.connect(g); g.connect(masterGain);
+            g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
             osc.start(); osc.stop(audioCtx.currentTime + 2);
     
             balls.forEach(b => {
                 let ang = Math.atan2(b.y-400, b.x-400);
-                let force = 5 + Math.random() * 10;
+                let force = 10 + Math.random() * 10;
                 b.vx = Math.cos(ang) * force; b.vy = Math.sin(ang) * force;
             });
             setTimeout(() => {
@@ -421,27 +233,43 @@
             }, 2000);
         }
     
-        function updateSpeed(newSpeed) { speed = parseFloat(newSpeed); }
+        function updateSpeed(newSpeed) { speed = parseFloat(newSpeed) * 1.2; }
+    
+        function toggleMenu() {
+            const content = document.getElementById('menu-content');
+            content.style.display = (content.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function pauseGame() {
+            isRunning = false;
+            document.getElementById('ui-overlay').style.display = 'flex';
+            document.getElementById('pause-screen').style.display = 'block';
+            document.getElementById('entry-screen').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'none';
+            document.getElementById('pause-btn').innerText = "RESUME";
+            document.getElementById('pause-btn').style.color = "#ffff00";
+        }
     
         function toggleGame() {
-            const btn = document.getElementById('pause-btn');
             if (isRunning) {
-                isRunning = false;
-                btn.innerText = "RESUME";
-                btn.style.color = "#ffff00";
+                pauseGame();
             } else {
+                resumeGame();
+            }
+        }
+    
+        function resumeGame() {
+            document.getElementById('ui-overlay').style.display = 'none';
+            document.getElementById('pause-screen').style.display = 'none';
+            document.getElementById('pause-btn').innerText = "STOP";
+            document.getElementById('pause-btn').style.color = "#00ffff";
+            if (!isRunning) {
                 isRunning = true;
-                btn.innerText = "STOP";
-                btn.style.color = "#00ffff";
                 requestAnimationFrame(animate);
             }
         }
     
         function confirmRestart() {
-            if (confirm("Are you sure? This will reset your current score!")) {
-                location.reload();
-            }
+            if (confirm("Are you sure? This will reset your score!")) location.reload();
         }
     </script>
-</body>
-</html>
